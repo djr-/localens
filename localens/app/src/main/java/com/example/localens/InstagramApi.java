@@ -27,4 +27,20 @@ public class InstagramApi {
             this.data = data;
         }
     }
+
+    public static class MediaData {
+        public final String type;
+
+        public MediaData(String type) {
+            this.type = type;
+        }
+    }
+
+    public static class RecentMediaResults {
+        public final List<MediaData> data;
+
+        public RecentMediaResults(List<MediaData> data) {
+            this.data = data;
+        }
+    }
 }
