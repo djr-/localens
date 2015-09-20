@@ -1,9 +1,20 @@
 package com.example.localens;
 
-import android.support.v7.app.AppCompatActivity;
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import retrofit.Call;
+import retrofit.Callback;
+import retrofit.GsonConverterFactory;
+import retrofit.Response;
+import retrofit.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -11,6 +22,43 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(InstagramApi.API_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        Instagram instagram = retrofit.create(Instagram.class);
+
+        System.out.println("Latitude: " + latitude);
+        System.out.println("Longitude: " + longitude);
+        String accessToken = getResources().getString(R.string.InstagramToken);
+
+        Call<InstagramApi.SearchResults> call = instagram.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken);
+        call.enqueue(new Callback<InstagramApi.SearchResults>() {
+            @Override
+            public void onResponse(Response<InstagramApi.SearchResults> response) {
+                InstagramApi.SearchResults searchResults = response.body();
+
+                System.out.println("START");
+                System.out.println(searchResults);
+                for (InstagramApi.Location location : searchResults.data) {
+                    System.out.println(location.name);
+                }
+
+                System.out.println("END");
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
 
     @Override
