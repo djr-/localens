@@ -8,6 +8,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -22,13 +23,16 @@ import retrofit.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Toast _toast;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        _toast = Toast.makeText(this, "", Toast.LENGTH_LONG);
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        final Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
 
@@ -66,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
                 Instagram instagram = retrofit.create(Instagram.class);
 
                 System.out.println("Pulling data from " + locations.get(0).name);
+                _toast.setText(locations.get(0).name);
+                _toast.show();
 
                 Call<InstagramApi.RecentMediaResults> call = instagram.recentMedia(locations.get(0).id, accessToken);
                 call.enqueue(new Callback<InstagramApi.RecentMediaResults>() {
