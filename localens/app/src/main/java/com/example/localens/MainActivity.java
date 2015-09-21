@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         _toast = Toast.makeText(this, "", Toast.LENGTH_LONG);
 
         LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //TODO: Force an update of the GPS onCreate.
         final Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                     locations.add(location);
                 }
 
-                //TODO: The below code should be moved to a better place once it has been tested.
+                //TODO: Nested callbacks are ugly. These should be replaced by ListenableFutures (or possibly RXJava)
                 Retrofit retrofit = new Retrofit.Builder()
                         .baseUrl(InstagramApi.API_URL)
                         .addConverterFactory(GsonConverterFactory.create())
