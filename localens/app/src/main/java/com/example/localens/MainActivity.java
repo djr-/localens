@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
+
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +73,8 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(Response<InstagramApi.RecentMediaResults> response) {
                         InstagramApi.RecentMediaResults mediaResults = response.body();
                         for (InstagramApi.MediaData mediaData : mediaResults.data) {
-                            System.out.println(mediaData.images.low_resolution.url);
+                            System.out.println(mediaData.images.standard_resolution.url);
+                            Picasso.with(getApplicationContext()).load(mediaData.images.standard_resolution.url).into((ImageView) findViewById(R.id.only_image));
                         }
                     }
 
@@ -78,8 +82,6 @@ public class MainActivity extends AppCompatActivity {
                     public void onFailure(Throwable t) {
                         t.printStackTrace();
                     }
-
-
                 });
             }
 
