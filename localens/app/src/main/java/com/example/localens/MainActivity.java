@@ -46,12 +46,12 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Response<InstagramApi.SearchResults> response) {
                 InstagramApi.SearchResults searchResults = response.body();
 
-                List<String> locationIDs = new ArrayList<String>(); //TODO: Populate these as location objects rather than simply IDs
+                List<InstagramApi.Location> locations = new ArrayList<InstagramApi.Location>();
 
                 System.out.println("List of found nearby locations:");
                 for (InstagramApi.Location location : searchResults.data) {
                     System.out.println(location.name);
-                    locationIDs.add(location.id);
+                    locations.add(location);
                 }
 
                 //TODO: The below code should be moved to a better place once it has been tested.
@@ -62,14 +62,16 @@ public class MainActivity extends AppCompatActivity {
 
                 Instagram instagram = retrofit.create(Instagram.class);
 
-                Call<InstagramApi.RecentMediaResults> call = instagram.recentMedia(locationIDs.get(0), accessToken);
+                System.out.println("Pulling data from " + locations.get(0).name);
+
+                Call<InstagramApi.RecentMediaResults> call = instagram.recentMedia(locations.get(0).id, accessToken);
                 call.enqueue(new Callback<InstagramApi.RecentMediaResults>() {
                     @Override
                     public void onResponse(Response<InstagramApi.RecentMediaResults> response) {
-                        InstagramApi.RecentMediaResults searchResults = response.body();
-                        System.out.println("START");
-                        System.out.println(searchResults.data.get(0).type);
-                        System.out.println("END");
+                        InstagramApi.RecentMediaResults mediaResults = response.body();
+                        for (InstagramApi.MediaData mediaData : mediaResults.data) {
+                            System.out.println(mediaData.images.low_resolution.url);
+                        }
                     }
 
                     @Override

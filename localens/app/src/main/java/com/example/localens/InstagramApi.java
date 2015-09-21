@@ -28,11 +28,44 @@ public class InstagramApi {
         }
     }
 
+    public static class Image {
+        public String url;
+        public int width;
+        public int height;
+
+        public Image(String url, int width, int height) {
+            this.url = url;
+            this.width = width;
+            this.height = height;
+        }
+    }
+
+    public static class ImageTypes {
+        public Image low_resolution;
+        //Thumbnail?
+        //Standard res?
+
+        public ImageTypes(Image low_resolution) {
+            this.low_resolution = low_resolution;
+        }
+    }
+
     public static class MediaData {
         public final String type;
+        public final List<String> tags;
+        //Comments?
+        //Caption?
+        //Likes?
+        //User?
+        //Created time?
+        public final ImageTypes images;
+        //Id?
+        //Location?
 
-        public MediaData(String type) {
+        public MediaData(String type, List<String> tags, ImageTypes images) {
             this.type = type;
+            this.tags = tags;
+            this.images = images;
         }
     }
 
