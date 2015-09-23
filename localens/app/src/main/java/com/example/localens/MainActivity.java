@@ -20,6 +20,7 @@ import retrofit.Callback;
 import retrofit.GsonConverterFactory;
 import retrofit.Response;
 import retrofit.Retrofit;
+import uk.co.senab.photoview.PhotoViewAttacher;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     locations.add(location);
                 }
 
-                //TODO: Nested callbacks are ugly. These should be replaced by ListenableFutures (or possibly RXJava)
+                //TODO: Nested callbacks are ugly. These should be replaced by ListenableFutures (or possibly RXJava)...or Chain of Responsibility pattern.
                 Retrofit retrofit = new Retrofit.Builder()
                         .baseUrl(InstagramApi.API_URL)
                         .addConverterFactory(GsonConverterFactory.create())
@@ -76,12 +77,18 @@ public class MainActivity extends AppCompatActivity {
 
                 Call<InstagramApi.RecentMediaResults> call = instagram.recentMedia(locations.get(0).id, accessToken);
                 call.enqueue(new Callback<InstagramApi.RecentMediaResults>() {
+                    PhotoViewAttacher photoViewAttacher;
+
                     @Override
                     public void onResponse(Response<InstagramApi.RecentMediaResults> response) {
                         InstagramApi.RecentMediaResults mediaResults = response.body();
                         for (InstagramApi.MediaData mediaData : mediaResults.data) {
                             System.out.println(mediaData.images.standard_resolution.url);
-                            Picasso.with(getApplicationContext()).load(mediaData.images.standard_resolution.url).into((ImageView) findViewById(R.id.only_image));
+
+                            ImageView imageView = (ImageView) findViewById(R.id.only_image);
+                            photoViewAttacher = new PhotoViewAttacher(imageView);
+                            Picasso.with(getApplicationContext()).load(mediaData.images.standard_resolution.url).into(imageView);
+                            photoViewAttacher.update();
                         }
                     }
 
