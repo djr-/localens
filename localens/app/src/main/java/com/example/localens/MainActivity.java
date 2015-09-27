@@ -9,9 +9,13 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.localens.models.Location;
 import com.example.localens.models.LocationSearchResults;
+import com.example.localens.models.MediaData;
 import com.example.localens.models.RecentMediaSearchResults;
 import com.squareup.picasso.Picasso;
+
+import java.util.List;
 
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
@@ -41,29 +45,38 @@ public class MainActivity extends AppCompatActivity {
 
         final InstagramService instagramService = InstagramService.Factory.create();
 
+        //TODO: Investigate adding retrolambda to clean up these calls.
         instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken)
-            .flatMap(new Func1<LocationSearchResults, Observable<RecentMediaSearchResults>>() {
+            .map(new Func1<LocationSearchResults, List<Location>>() {
                 @Override
-                public Observable<RecentMediaSearchResults> call(LocationSearchResults locationSearchResults) {
-                    _toast.setText(locationSearchResults.data.get(0).name);
-                    _toast.show();
-                    return instagramService.recentMedia(locationSearchResults.data.get(0).id, accessToken);
+                public List<Location> call(LocationSearchResults locationSearchResults) {
+                    //TODO: Sort results by distance to current location using distanceTo function.
+
+                    return locationSearchResults.data;
                 }
             })
-            .map(new Func1<RecentMediaSearchResults, String>() {
+            .flatMap(new Func1<List<Location>, Observable<RecentMediaSearchResults>>() {
                 @Override
-                public String call(RecentMediaSearchResults recentMediaSearchResults) {
-                    return recentMediaSearchResults.data.get(0).images.standard_resolution.url;
+                public Observable<RecentMediaSearchResults> call(List<Location> nearbyLocations) {
+                    _toast.setText(nearbyLocations.get(0).name);
+                    _toast.show();
+                    return instagramService.recentMedia(nearbyLocations.get(0).id, accessToken);
+                }
+            })
+            .map(new Func1<RecentMediaSearchResults, List<MediaData>>() {
+                @Override
+                public List<MediaData> call(RecentMediaSearchResults recentMediaSearchResults) {
+                    return recentMediaSearchResults.data;
                 }
             })
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(new Action1<String>() {
+            .subscribe(new Action1<List<MediaData>>() {
                 @Override
-                public void call(String s) {
+                public void call(List<MediaData> mediaData) {
                     PhotoViewAttacher photoViewAttacher;
                     ImageView imageView = (ImageView) findViewById(R.id.only_image);
                     photoViewAttacher = new PhotoViewAttacher(imageView);
-                    Picasso.with(getApplicationContext()).load(s).into(imageView);
+                    Picasso.with(getApplicationContext()).load(mediaData.get(0).images.standard_resolution.url).into(imageView);
                     photoViewAttacher.update();
                 }
             });
