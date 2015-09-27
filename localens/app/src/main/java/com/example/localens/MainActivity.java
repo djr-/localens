@@ -9,18 +9,14 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.example.localens.models.Location;
 import com.example.localens.models.LocationSearchResults;
-import com.example.localens.models.MediaData;
 import com.example.localens.models.RecentMediaSearchResults;
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import retrofit.Call;
-import retrofit.Callback;
-import retrofit.Response;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,80 +39,34 @@ public class MainActivity extends AppCompatActivity {
 
         final String accessToken = getResources().getString(R.string.InstagramToken);
 
-        InstagramService instagramService = InstagramService.Factory.create();
+        final InstagramService instagramService = InstagramService.Factory.create();
 
-        Call<LocationSearchResults> call = instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken);
-        call.enqueue(new Callback<LocationSearchResults>() {
-            @Override
-            public void onResponse(Response<LocationSearchResults> response) {
-                System.out.println(response);
-                LocationSearchResults searchResults = response.body();
-
-                List<Location> locations = new ArrayList<Location>();
-
-                System.out.println("List of found nearby locations:");
-                for (Location location : searchResults.data) {
-                    System.out.println(location.name);
-                    locations.add(location);
+        instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken)
+            .flatMap(new Func1<LocationSearchResults, Observable<RecentMediaSearchResults>>() {
+                @Override
+                public Observable<RecentMediaSearchResults> call(LocationSearchResults locationSearchResults) {
+                    _toast.setText(locationSearchResults.data.get(0).name);
+                    _toast.show();
+                    return instagramService.recentMedia(locationSearchResults.data.get(0).id, accessToken);
                 }
-
-                System.out.println("Pulling data from " + locations.get(0).name);
-                _toast.setText(locations.get(0).name);
-                _toast.show();
-
-                Call<RecentMediaSearchResults> call = InstagramService.Factory.create().recentMedia(locations.get(0).id, accessToken);
-                call.enqueue(new Callback<RecentMediaSearchResults>() {
+            })
+            .map(new Func1<RecentMediaSearchResults, String>() {
+                @Override
+                public String call(RecentMediaSearchResults recentMediaSearchResults) {
+                    return recentMediaSearchResults.data.get(0).images.standard_resolution.url;
+                }
+            })
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(new Action1<String>() {
+                @Override
+                public void call(String s) {
                     PhotoViewAttacher photoViewAttacher;
-
-                    @Override
-                    public void onResponse(Response<RecentMediaSearchResults> response) {
-                        RecentMediaSearchResults mediaResults = response.body();
-                        for (MediaData mediaData : mediaResults.data) {
-                            System.out.println(mediaData.images.standard_resolution.url);
-
-                            ImageView imageView = (ImageView) findViewById(R.id.only_image);
-                            photoViewAttacher = new PhotoViewAttacher(imageView);
-                            Picasso.with(getApplicationContext()).load(mediaData.images.standard_resolution.url).into(imageView);
-                            photoViewAttacher.update();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Throwable t) {
-                        t.printStackTrace();
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-                t.printStackTrace();
-            }
-        });
-
-        //Subscription subscription;
-        //subscription = instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken);
-
-        //Observable<InstagramApi.SearchResults> call = instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken);
-
-//        instagramService.searchLocations(Double.toString(latitude), Double.toString(longitude), accessToken)
-//                .subscribe(new Subscriber<InstagramApi.SearchResults>() {
-//
-//                    @Override
-//                    public void onCompleted() {
-//                        System.out.println("COMPLETED!");
-//                    }
-//
-//                    @Override
-//                    public void onError(Throwable e) {
-//                        System.out.println("ERROR!");
-//                    }
-//
-//                    @Override
-//                    public void onNext(InstagramApi.SearchResults searchResults) {
-//                        System.out.println("NEXT!");
-//                    }
-//                });
+                    ImageView imageView = (ImageView) findViewById(R.id.only_image);
+                    photoViewAttacher = new PhotoViewAttacher(imageView);
+                    Picasso.with(getApplicationContext()).load(s).into(imageView);
+                    photoViewAttacher.update();
+                }
+            });
     }
 
     @Override
