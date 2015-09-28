@@ -96,18 +96,25 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private void displayLatestInstagramPhoto(android.location.Location currentLocation) {
         final InstagramService instagramService = InstagramService.Factory.create();
         final String accessToken = getResources().getString(R.string.InstagramToken);
+        final int distanceToCheck = 5000;    // Maximum distance as specified in the Instagram API.
+
+        System.out.println("Current latitude: " + currentLocation.getLatitude());
+        System.out.println("Current longitude: " + currentLocation.getLongitude());
+        System.out.println("Current location accuracy: " + currentLocation.getAccuracy());
 
         //TODO: Investigate adding retrolambda to clean up these calls.
-        instagramService.searchLocations(Double.toString(currentLocation.getLatitude()), Double.toString(currentLocation.getLongitude()), accessToken)
+        instagramService.searchLocations(Double.toString(currentLocation.getLatitude()), Double.toString(currentLocation.getLongitude()), Integer.toString(distanceToCheck), accessToken)
                 .map(new Func1<LocationSearchResults, List<Location>>() {
                     @Override
                     public List<Location> call(LocationSearchResults locationSearchResults) {
                     // TODO: This is a very inefficient way to get the sorted list of locations, but it will get the job done for now.
                     ArrayList<Location> locations = new ArrayList<Location>();
-                    for (Location location : locationSearchResults.data)
+                    for (Location location : locationSearchResults.data)    //TODO: It appears that Instagram is only returning a maximum of 20 nearby locations. Need to look into strategies to deal with pagination.
                     {
+                        System.out.println(location.name);
                         locations.add(location);
                     }
+
                     Collections.sort(locations, new Comparator<Location>() {
                         @Override
                         public int compare(Location lhs, Location rhs) {

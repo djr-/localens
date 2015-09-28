@@ -19,7 +19,7 @@ public interface InstagramService {
     Observable<LocationSearchResults> searchLocations(
             @Query("lat") String latitude,
             @Query("lng") String longitude,
-            //@Query("distance") String distance,   //Optional parameter -- currently unused.
+            @Query("distance") String distance,
             @Query("access_token") String accessToken
     );
 
