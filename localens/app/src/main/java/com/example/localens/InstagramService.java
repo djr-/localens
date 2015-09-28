@@ -20,6 +20,7 @@ public interface InstagramService {
             @Query("lat") String latitude,
             @Query("lng") String longitude,
             @Query("distance") String distance,
+            @Query("count") String count,
             @Query("access_token") String accessToken
     );
 

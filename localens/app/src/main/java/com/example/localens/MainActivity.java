@@ -14,11 +14,10 @@ import com.example.localens.models.RecentMediaSearchResults;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import com.squareup.picasso.Picasso;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import rx.Observable;
@@ -96,44 +95,30 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     private void displayLatestInstagramPhoto(android.location.Location currentLocation) {
         final InstagramService instagramService = InstagramService.Factory.create();
         final String accessToken = getResources().getString(R.string.InstagramToken);
-        final int distanceToCheck = 5000;    // Maximum distance as specified in the Instagram API.
+        final int distanceToCheck = 5000;   // Maximum distance as specified in the Instagram API.
+        final int numberOfLocationsToSearch = 33;               // Undocumented Instagram feature to get more than 20 locations -- 33 appears to be the max.
 
         System.out.println("Current latitude: " + currentLocation.getLatitude());
         System.out.println("Current longitude: " + currentLocation.getLongitude());
         System.out.println("Current location accuracy: " + currentLocation.getAccuracy());
 
         //TODO: Investigate adding retrolambda to clean up these calls.
-        instagramService.searchLocations(Double.toString(currentLocation.getLatitude()), Double.toString(currentLocation.getLongitude()), Integer.toString(distanceToCheck), accessToken)
+        instagramService.searchLocations(Double.toString(currentLocation.getLatitude()), Double.toString(currentLocation.getLongitude()), Integer.toString(distanceToCheck), Integer.toString(numberOfLocationsToSearch), accessToken)
                 .map(new Func1<LocationSearchResults, List<Location>>() {
                     @Override
                     public List<Location> call(LocationSearchResults locationSearchResults) {
-                    // TODO: This is a very inefficient way to get the sorted list of locations, but it will get the job done for now.
-                    ArrayList<Location> locations = new ArrayList<Location>();
-                    for (Location location : locationSearchResults.data)    //TODO: It appears that Instagram is only returning a maximum of 20 nearby locations. Need to look into strategies to deal with pagination.
-                    {
-                        System.out.println(location.name);
-                        locations.add(location);
-                    }
 
-                    Collections.sort(locations, new Comparator<Location>() {
-                        @Override
-                        public int compare(Location lhs, Location rhs) {
-                            //System.out.println("LHS: " + lhs.name);
-                            //System.out.println("RHS: " + rhs.name);
-                            android.location.Location lhsLocation = new android.location.Location("");
-                            android.location.Location rhsLocation = new android.location.Location("");
-                            lhsLocation.setLatitude(lhs.latitude);
-                            lhsLocation.setLongitude(lhs.longitude);
-                            rhsLocation.setLatitude(rhs.latitude);
-                            rhsLocation.setLongitude(rhs.longitude);
+                        Function<Location, Float> getDistanceTo = new Function<Location, Float>() {
+                            @Override
+                            public Float apply(Location inputLocation) {
+                                android.location.Location newLocation = new android.location.Location("");
+                                newLocation.setLatitude(inputLocation.latitude);
+                                newLocation.setLongitude(inputLocation.longitude);
+                                return _lastLocation.distanceTo(newLocation);
+                            }
+                        };
 
-                            //System.out.println("LHS distance to current location: " + lhsLocation.distanceTo(_lastLocation));
-                            //System.out.println("RHS distance to current location: " + rhsLocation.distanceTo(_lastLocation));
-                            return ((Float) lhsLocation.distanceTo(_lastLocation)).compareTo((Float) rhsLocation.distanceTo(_lastLocation));
-                        }
-                    });
-
-                    return locations;
+                        return Ordering.natural().onResultOf(getDistanceTo).sortedCopy(locationSearchResults.data);
                     }
                 })
                 .flatMap(new Func1<List<Location>, Observable<RecentMediaSearchResults>>() {
