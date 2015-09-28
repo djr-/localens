@@ -16,6 +16,9 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.squareup.picasso.Picasso;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import rx.Observable;
@@ -99,9 +102,31 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 .map(new Func1<LocationSearchResults, List<Location>>() {
                     @Override
                     public List<Location> call(LocationSearchResults locationSearchResults) {
-                        //TODO: Sort results by distance to current location using distanceTo function.
+                    // TODO: This is a very inefficient way to get the sorted list of locations, but it will get the job done for now.
+                    ArrayList<Location> locations = new ArrayList<Location>();
+                    for (Location location : locationSearchResults.data)
+                    {
+                        locations.add(location);
+                    }
+                    Collections.sort(locations, new Comparator<Location>() {
+                        @Override
+                        public int compare(Location lhs, Location rhs) {
+                            //System.out.println("LHS: " + lhs.name);
+                            //System.out.println("RHS: " + rhs.name);
+                            android.location.Location lhsLocation = new android.location.Location("");
+                            android.location.Location rhsLocation = new android.location.Location("");
+                            lhsLocation.setLatitude(lhs.latitude);
+                            lhsLocation.setLongitude(lhs.longitude);
+                            rhsLocation.setLatitude(rhs.latitude);
+                            rhsLocation.setLongitude(rhs.longitude);
 
-                        return locationSearchResults.data;
+                            //System.out.println("LHS distance to current location: " + lhsLocation.distanceTo(_lastLocation));
+                            //System.out.println("RHS distance to current location: " + rhsLocation.distanceTo(_lastLocation));
+                            return ((Float) lhsLocation.distanceTo(_lastLocation)).compareTo((Float) rhsLocation.distanceTo(_lastLocation));
+                        }
+                    });
+
+                    return locations;
                     }
                 })
                 .flatMap(new Func1<List<Location>, Observable<RecentMediaSearchResults>>() {
